@@ -1,6 +1,6 @@
 import sale_crawling
 import firebase_store
-
+from apscheduler.schedulers.blocking import BlockingScheduler
 def main():
     crawer=sale_crawling.SaleCrawler()
     firebase_db = firebase_store.FirebaseStore()
@@ -16,4 +16,9 @@ def main():
 
 
 if __name__ == "__main__":
-	main()
+
+    sched = BlockingScheduler()
+    sched.add_job(main,'cron', day='1, 15', hour=7, minute=30, second=0)
+    sched.start()
+
+    # main()
