@@ -108,7 +108,7 @@ class SaleCrawler:
         return sale_info
 
     
-    def crawl_gs(self):
+    def crawl_gs(self) -> dict:
         """
         gs 편의점 할인 페이지에서 상품정보 가져옴
 
@@ -161,11 +161,4 @@ class SaleCrawler:
         num_bar = soup.find_all('span',class_ = 'num')
         test = num_bar[2].find_all('a')
         print(test[-1].text)
-        
-
-c = SaleCrawler()
-data = c.crawl_gs()
-print(data)
-print(len(data))
-with open("data.pickle","wb") as fw:
-    pickle.dump(data,fw)
+         
