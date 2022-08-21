@@ -5,14 +5,22 @@ def main():
     crawer=sale_crawling.SaleCrawler()
     firebase_db = firebase_store.FirebaseStore()
 
-
     gs_sale_data = crawer.crawl_gs()
 
     gs_addi = {
         'enable':True,
         'store':'gs'}
     firebase_db.set_datas(gs_sale_data,gs_addi)
-    print('Done')
+    print('Done Gs25')
+
+
+    cu_sale_data = crawer.crawl_cu()
+
+    cu_addi = {
+        'enable':True,
+        'store':'cu'}
+    firebase_db.set_datas(cu_sale_data,cu_addi)
+    print('Done CU')
 
 
 if __name__ == "__main__":
