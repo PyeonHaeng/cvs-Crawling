@@ -163,7 +163,7 @@ class SaleCrawler:
 
 
         for tags in tag_datas:
-
+            
             self.driver.find_element_by_xpath(tags['btn_tab']).click()
             time.sleep(3)
 
@@ -205,7 +205,11 @@ class SaleCrawler:
 
 
                     sale_info.append(data)
+            time.sleep(3)
 
+            #새로고침 , 안하면 왜인지 2+1 탭 버튼 누를때 에러 발생
+            self.driver.refresh()
+            time.sleep(3)
         return sale_info
 
     def crawl_cu(self) -> dict:
@@ -242,17 +246,3 @@ class SaleCrawler:
         self.driver.quit()
         return sale_info
 
-    def test(self):
-        self.driver.get('http://gs25.gsretail.com/gscvs/ko/products/event-goods#;')
-        self.driver.implicitly_wait(2)
-        self.driver.find_element_by_xpath('//*[@id="GIFT"]').click()
-        self.driver.implicitly_wait(2)
-        self.driver.find_element_by_xpath('//*[@id="contents"]/div[2]/div[3]/div/div/div[3]/div/a[4]').click()
-        self.driver.implicitly_wait(2)
-        
-        
-        html = self.driver.page_source
-        soup = BeautifulSoup(html,"html.parser")
-        num_bar = soup.find_all('span',class_ = 'num')
-        test = num_bar[2].find_all('a')
-        print(test[-1].text)
