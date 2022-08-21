@@ -147,6 +147,101 @@ class SaleCrawler:
         self.driver.quit()
         return sale_info
 
+
+    def __crawl_cu_items(self,tag_datas):
+        """
+        cu 편의점 할인 페이지에서 상품정보 가져오는데 반복되는 부분 재활용용도
+
+        Args:
+            tag_datas (lits[dictionary]) : 클릭할 속성값들이 dictionary형태로 묶여 들어있는 리스트
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+
+        sale_info = []
+
+
+        for tags in tag_datas:
+
+            self.driver.find_element_by_xpath(tags['btn_tab']).click()
+            time.sleep(3)
+
+            #하단의 더보기를 한계까지 누르기
+            while True:
+                try:
+                    self.driver.find_element_by_xpath(tags['btn_next_page']).click()
+                    time.sleep(3)
+                except:
+                    break
+
+            html = self.driver.page_source
+            soup = BeautifulSoup(html,"html.parser")
+
+            #각 상품들은 div 하단의 ul들 안에 li 안에 들어있다.
+            goods_list = soup.select(tags['prod_list_wrap'])[0].find_all('ul')
+
+            for goods in goods_list:
+                goods_boxes = goods.find_all('li',class_ ='prod_list')
+                for g in goods_boxes:
+                    data = {'tag' : tags['tag']}
+                    try:
+                        data['name'] = g.find('div',class_ = 'name').find('p').text
+                    except:
+                        data['name'] = 'error'
+                        print(f'이름 찾기 에러 : {g}')
+
+                    try:
+                        data['img'] = g.find('img', class_ ='prod_img').get('src')
+                    except:
+                        data['img'] = 'error'
+                        print(f'그림찾기 에러 : {data["name"]} - {g}')
+
+                    try:
+                        data['price'] = g.find('div', class_ = 'price').find('strong').text
+                    except:
+                        data['price'] = 'error'
+                        print(f'가격찾기 에러 : {data["name"]} - {g}')
+
+
+                    sale_info.append(data)
+
+        return sale_info
+
+    def crawl_cu(self) -> dict:
+        """
+        cu 편의점 할인 페이지에서 상품정보 가져옴
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+        #cu 할인 페이지 로드
+        self.driver.get('https://cu.bgfretail.com/event/plus.do?category=event&depth2=1&sf=N')
+    
+        time.sleep(5)
+
+
+        tag_datas = [
+            {
+                'btn_tab':'//*[@id="contents"]/div[1]/ul/li[2]/a',
+                'btn_next_page':'//*[@id="contents"]/div[2]/div/div/div[1]/a',
+                'prod_list_wrap':'#contents > div.relCon > div',
+                'tag' : '1+1'
+            },
+            {
+                'btn_tab':'//*[@id="contents"]/div[1]/ul/li[3]/a',
+                'btn_next_page':'//*[@id="contents"]/div[2]/div/div/div[1]/a',
+                'prod_list_wrap':'#contents > div.relCon > div',
+                'tag' : '2+1'
+            }
+        ]
+        sale_info = self.__crawl_cu_items(tag_datas)
+
+
+
+        self.driver.quit()
+        return sale_info
+
     def test(self):
         self.driver.get('http://gs25.gsretail.com/gscvs/ko/products/event-goods#;')
         self.driver.implicitly_wait(2)
@@ -161,4 +256,3 @@ class SaleCrawler:
         num_bar = soup.find_all('span',class_ = 'num')
         test = num_bar[2].find_all('a')
         print(test[-1].text)
-         
