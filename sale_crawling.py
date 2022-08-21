@@ -1,3 +1,4 @@
+from ast import excepthandler
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,6 +13,8 @@ class SaleCrawler:
         self.driver = webdriver.Chrome('./chromedriver')
         self.driver.implicitly_wait(3)
 
+
+    
     def crawl_gs(self):
         #gs25 할인 페이지 로드
         self.driver.get('http://gs25.gsretail.com/gscvs/ko/products/event-goods#;')
@@ -19,8 +22,39 @@ class SaleCrawler:
         WebDriverWait(self.driver,10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/ul')))
 
         sale_info = []
+
+
+
+
         #우선 1+1 행사 부터 처리
-        while True:
+
+        #맨 마지막 페이지로 이동
+        self.driver.find_element_by_xpath('//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/div/a[4]').click()
+        #self.driver.implicitly_wait(2)
+        time.sleep(3)
+        
+        
+        html = self.driver.page_source
+        soup = BeautifulSoup(html,"html.parser")
+
+        #마지막 페이지에서 가장 마지막에 있는 숫자 페이지 확인 하여 총 페이지 수 가져옴
+        num_bar = soup.find_all('span',class_ = 'num')
+        num_final = num_bar[2].find_all('a')[-1].text
+        try:
+            num_final = int(num_final)
+        except:
+            print('페이지 마지막 번호 가져오기 에러?')
+            raise
+
+        #다시 1페이지로 복귀
+        self.driver.find_element_by_xpath('//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/div/a[1]').click()
+        #self.driver.implicitly_wait(2)
+        time.sleep(3)
+
+
+        for _ in range(num_final):
+
+            
             html = self.driver.page_source
             soup = BeautifulSoup(html,"html.parser")
 
@@ -61,7 +95,7 @@ class SaleCrawler:
 
 
                 #implicitly_wait 는 기본 로딩이라 js 등에 의한 로딩은 무시?
-                #다른 대기 방법 사용해보았지만 사이트에서 로딩창이 뜨면 에러 발생 -> 무식하게 time.sleep하면 괜찮은듯?
+                #다른 대기 방법 사용해보았지만 사이트에서 로딩창이 뜨면 에러 발생 -> 무식하게 time.sleep하면 괜찮은듯? 아닌듯 가아끔 못가져오는 경우가있넹....
                 #self.driver.implicitly_wait(3)
                 #WebDriverWait(self.driver,10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/ul/li[1]/div/p[1]')))
                 #WebDriverWait(self.driver,10).until(EC.presence_of_all_elements_located((By.XPATH,'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/ul/li[1]/div/p[1]')))
@@ -70,6 +104,7 @@ class SaleCrawler:
             except:
                 #다음버튼 눌러서 반응없이 에러나면 1+1 정보 끝난거
                 # 에러 안나고 마지막 페이지 재로드. 다른 방법 필요
+                print('다음 페이지 버튼 에러?')
                 break
         return sale_info
 
