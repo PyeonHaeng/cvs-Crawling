@@ -5,13 +5,49 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
+import requests
+import enum
 import pickle
+
+class ConvName(enum.Enum):
+    GS25=0
+    CU=1
+    SevenEleven = 2
+    MiniStop = 3
+    EMart24 = 4
+
 
 
 class SaleCrawler:
     def __init__(self):
         self.driver = webdriver.Chrome('./chromedriver')
         self.driver.implicitly_wait(3)
+
+
+
+    def __check_img_link(self,link,conv_name = 0):
+        """
+        이미지 링크의 무결성 확인
+        이미지 링크 에러시 null 반환
+
+        Args:
+            link (string) :  확인할 링크
+            cov_name : 편의 점 이름
+
+        Return:
+            고친 링크 반환, 문제 있는 링크시 null값 반환
+        """
+        if conv_name == ConvName.CU.value:
+            link = 'http' + link
+        elif conv_name == ConvName.SevenEleven.value:
+            link = 'https://www.7-eleven.co.kr' + link
+
+
+        if requests.get(link).status_code != 200:
+            return None
+        
+        return link
+
 
 
     def __crawl_gs_items(self,tag_datas):
@@ -71,19 +107,19 @@ class SaleCrawler:
                     try:
                         data['name'] = g.find('p',class_ = 'tit').text
                     except:
-                        data['name'] = 'error'
+                        data['name'] = None
                         print(f'이름 찾기 에러 : {g}')
 
                     try:
-                        data['img'] = g.find('p', class_ ='img').find('img').get('src')
+                        data['img'] = self.__check_img_link(g.find('p', class_ ='img').find('img').get('src'))
                     except:
-                        data['img'] = 'error'
+                        data['img'] = None
                         print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                     try:
                         data['price'] = g.find('span', class_ = 'cost').text
                     except:
-                        data['price'] = 'error'
+                        data['price'] = None
                         print(f'가격찾기 에러 : {data["name"]} - {g}')
 
 
@@ -108,6 +144,7 @@ class SaleCrawler:
         return sale_info
 
     
+
     def crawl_gs(self) -> dict:
         """
         gs 편의점 할인 페이지에서 상품정보 가져옴
@@ -142,10 +179,9 @@ class SaleCrawler:
         ]
         sale_info = self.__crawl_gs_items(tag_datas)
 
-
-
         self.driver.quit()
         return sale_info
+
 
 
     def __crawl_cu_items(self,tag_datas):
@@ -188,19 +224,19 @@ class SaleCrawler:
                     try:
                         data['name'] = g.find('div',class_ = 'name').find('p').text
                     except:
-                        data['name'] = 'error'
+                        data['name'] = None
                         print(f'이름 찾기 에러 : {g}')
 
                     try:
-                        data['img'] = g.find('img', class_ ='prod_img').get('src')
+                        data['img'] = self.__check_img_link(g.find('img', class_ ='prod_img').get('src'),ConvName.CU.value)
                     except:
-                        data['img'] = 'error'
+                        data['img'] = None
                         print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                     try:
                         data['price'] = g.find('div', class_ = 'price').find('strong').text
                     except:
-                        data['price'] = 'error'
+                        data['price'] = None
                         print(f'가격찾기 에러 : {data["name"]} - {g}')
 
 
@@ -211,6 +247,8 @@ class SaleCrawler:
             self.driver.refresh()
             time.sleep(3)
         return sale_info
+
+
 
     def crawl_cu(self) -> dict:
         """
@@ -241,7 +279,106 @@ class SaleCrawler:
         ]
         sale_info = self.__crawl_cu_items(tag_datas)
 
+        self.driver.quit()
+        return sale_info
 
+
+
+    def __crawl_seven_eleven_items(self,tag_datas):
+        """
+        7-ELEVEn 편의점 할인 페이지에서 상품정보 가져오는데 반복되는 부분 재활용용도
+
+        Args:
+            tag_datas (lits[dictionary]) : 클릭할 속성값들이 dictionary형태로 묶여 들어있는 리스트
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+
+        sale_info = []
+
+
+        for tags in tag_datas:
+            
+            self.driver.find_element_by_xpath(tags['btn_tab']).click()
+            time.sleep(3)
+
+            first_flag = True
+
+            #하단의 더보기를 한계까지 누르기
+            while True:
+                try:
+                    if first_flag:
+                        self.driver.find_element_by_xpath(tags['btn_first_next_page']).click()
+                        first_flag = False
+                        time.sleep(3)
+                    else:
+                        self.driver.find_element_by_xpath(tags['btn_next_page']).click()
+                        time.sleep(3)
+                except:
+                    break
+
+            html = self.driver.page_source
+            soup = BeautifulSoup(html,"html.parser")
+
+            #각 상품들은 div 하단의 li 안에 들어있다. , 만 앞의 1+1 등 표시하는 건 제외
+            goods_list = soup.select(tags['prod_list_wrap'])[0].find_all('li',class_ = False)[1:]
+            
+            for g in goods_list:
+                data = {'tag' : tags['tag']}
+                try:
+                    data['name'] = g.find('div',class_ = 'name').text
+                except:
+                    data['name'] = None
+                    print(f'이름 찾기 에러 : {g}')
+
+                try:
+                    data['img'] = self.__check_img_link(g.find('div', class_ ='pic_product').find('img').get('src'),ConvName.SevenEleven.value)
+                except:
+                    data['img'] = None
+                    print(f'그림찾기 에러 : {data["name"]} - {g}')
+
+                try:
+                    data['price'] = g.find('div', class_ = 'price').text.strip()
+                except:
+                    data['price'] = None
+                    print(f'가격찾기 에러 : {data["name"]} - {g}')
+
+
+                sale_info.append(data)
+            time.sleep(3)
+        return sale_info
+
+    def crawl_seven_eleven(self) -> dict:
+        """
+        7-ELEVEn 편의점 할인 페이지에서 상품정보 가져옴
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+        #cu 할인 페이지 로드
+        self.driver.get('https://www.7-eleven.co.kr/product/presentList.asp')
+    
+        time.sleep(5)
+
+
+        tag_datas = [
+            {
+                'btn_tab':'//*[@id="actFrm"]/div[3]/div[1]/ul/li[1]/a',
+                'btn_first_next_page':'//*[@id="listUl"]/li[15]/a',
+                'btn_next_page' : '//*[@id="moreImg"]/a',
+                'prod_list_wrap':'#listDiv > div',
+                'tag' : '1+1'
+            },
+            {
+                'btn_tab':'//*[@id="actFrm"]/div[3]/div[1]/ul/li[2]/a',
+                'btn_first_next_page':'//*[@id="listUl"]/li[15]/a',
+                'btn_next_page' : '//*[@id="moreImg"]/a',
+                'prod_list_wrap':'#listDiv > div',
+                'tag' : '2+1'
+            }
+        ]
+        sale_info = self.__crawl_seven_eleven_items(tag_datas)
 
         self.driver.quit()
         return sale_info

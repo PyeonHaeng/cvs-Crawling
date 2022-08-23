@@ -23,10 +23,19 @@ def main():
     print('Done CU')
 
 
+    seven_eleven_sale_data = crawer.crawl_seven_eleven()
+
+    seven_eleven_addi = {
+        'enable':True,
+        'store':'7-eleven'}
+    firebase_db.set_datas(seven_eleven_sale_data,seven_eleven_addi)
+    print('Done 7-ELEVEn')
+
+
 if __name__ == "__main__":
 
-    sched = BlockingScheduler()
-    sched.add_job(main,'cron', day='1, 15', hour=7, minute=30, second=0)
-    sched.start()
+    # sched = BlockingScheduler()
+    # sched.add_job(main,'cron', day='1, 15', hour=7, minute=30, second=0)
+    # sched.start()
 
-    # main()
+    main()
