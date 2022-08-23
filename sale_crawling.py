@@ -38,7 +38,8 @@ class SaleCrawler:
             고친 링크 반환, 문제 있는 링크시 null값 반환
         """
         if conv_name == ConvName.CU.value:
-            link = 'http' + link
+            if link.find('http') != 0:
+                link = 'http:' + link
         elif conv_name == ConvName.SevenEleven.value:
             link = 'https://www.7-eleven.co.kr' + link
 
@@ -347,6 +348,12 @@ class SaleCrawler:
 
                 sale_info.append(data)
             time.sleep(3)
+
+            
+            #새로고침 , 안하면 왜인지 2+1 탭 버튼 누를때 에러 발생
+            self.driver.refresh()
+            time.sleep(15)
+
         return sale_info
 
     def crawl_seven_eleven(self) -> dict:
