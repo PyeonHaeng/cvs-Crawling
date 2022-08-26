@@ -2,6 +2,7 @@ from ast import excepthandler
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 import time
 from bs4 import BeautifulSoup
@@ -23,7 +24,8 @@ class SaleCrawler:
         self.driver = webdriver.Chrome('./chromedriver')
         self.driver.implicitly_wait(3)
 
-
+    def __del__(self):
+        self.driver.quit()
 
     def __check_img_link(self,link,conv_name = 0):
         """
@@ -180,7 +182,6 @@ class SaleCrawler:
         ]
         sale_info = self.__crawl_gs_items(tag_datas)
 
-        self.driver.quit()
         return sale_info
 
 
@@ -280,7 +281,6 @@ class SaleCrawler:
         ]
         sale_info = self.__crawl_cu_items(tag_datas)
 
-        self.driver.quit()
         return sale_info
 
 
@@ -301,7 +301,9 @@ class SaleCrawler:
 
         for tags in tag_datas:
             
-            self.driver.find_element_by_xpath(tags['btn_tab']).click()
+            #.click()으로 하니 왜인지 1+1 끝나고 2+1갈때 에러남, 1+1 처리안하고 2+1해보면 잘동작하는데.... 아무튼 바꾸니 해결됨
+            #self.driver.find_element_by_xpath(tags['btn_tab']).click()
+            self.driver.find_element_by_xpath(tags['btn_tab']).send_keys(Keys.ENTER)
             time.sleep(3)
 
             first_flag = True
@@ -387,6 +389,5 @@ class SaleCrawler:
         ]
         sale_info = self.__crawl_seven_eleven_items(tag_datas)
 
-        self.driver.quit()
         return sale_info
 
