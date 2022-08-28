@@ -36,6 +36,16 @@ def main():
         'store':'7-eleven'}
     firebase_db.set_datas(seven_eleven_sale_data,seven_eleven_addi)
     print('Done 7-ELEVEn')
+    
+    time.sleep(10)
+
+    mini_stop_sale_data = crawer.crawl_mini_stop()
+
+    mini_stop_addi = {
+        'enable':True,
+        'store':'ministop'}
+    firebase_db.set_datas(mini_stop_sale_data,mini_stop_addi)
+    print('Done ministop')
 
     time.sleep(10)
 

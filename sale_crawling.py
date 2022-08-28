@@ -1,4 +1,5 @@
 from ast import excepthandler
+from lib2to3.pgen2 import driver
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -44,6 +45,9 @@ class SaleCrawler:
                 link = 'http:' + link
         elif conv_name == ConvName.SevenEleven.value:
             link = 'https://www.7-eleven.co.kr' + link
+
+        elif conv_name == ConvName.MiniStop.value:
+            link = 'https://www.ministop.co.kr/MiniStopHomePage/page'+link[2:]
         
         elif conv_name == ConvName.EMart24.value:
             link = 'https://emart24.co.kr' + link
@@ -53,6 +57,22 @@ class SaleCrawler:
         
         return link
 
+
+
+    def __close_popup_page(self):
+        """
+        팝업 페이지 뜰 경우 전부 닫아 버리기
+        """
+        tabs= self.driver.window_handles
+        
+        while (len(tabs) != 1):
+            self.driver.switch_to_window(tabs[1])
+            self.driver.close()
+            tabs= self.driver.window_handles
+            
+            time.sleep(3)
+        
+        self.driver.switch_to_window(tabs[0])
 
 
     def __crawl_gs_items(self,tag_datas):
@@ -396,6 +416,130 @@ class SaleCrawler:
         return sale_info
 
 
+
+    def __crawl_mini_stop_items(self,tag_datas):
+        """
+        mini_stop 편의점 할인 페이지에서 상품정보 가져오는데 반복되는 부분 재활용용도
+
+        Args:
+            tag_datas (lits[dictionary]) : 클릭할 속성값들이 dictionary형태로 묶여 들어있는 리스트
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+
+        sale_info = []
+
+        self.__close_popup_page()
+        #할인페이지로 이동
+
+        time.sleep(5)
+        self.driver.switch_to_frame(self.driver.find_element_by_xpath('/html/frameset/frame'))
+        self.driver.switch_to_frame(self.driver.find_element_by_xpath('/html/frameset/frame[2]'))
+        self.driver.find_element_by_xpath('//*[@id="menu1"]/h2/a').click()
+        
+
+        for tags in tag_datas:
+            
+            self.driver.find_element_by_xpath(tags['btn_tab']).click()
+            time.sleep(3)
+            
+            html = self.driver.page_source
+            soup = BeautifulSoup(html,"html.parser")
+
+            prod_count = len(soup.select(tags['prod_list_wrap'])[0].find_all('li'))
+
+            #하단의 더보기를 한계까지 누르기
+            while True:
+                try:
+                    self.driver.find_element_by_xpath(tags['btn_next_page']).click()
+                    time.sleep(3)
+
+                    
+                    html = self.driver.page_source
+                    soup = BeautifulSoup(html,"html.parser")
+                    
+                    prod_count_new = len(soup.select(tags['prod_list_wrap'])[0].find_all('li'))
+
+                    if prod_count == prod_count_new:
+                        break
+                    else:
+                        prod_count = prod_count_new
+                except:
+                    break
+
+            html = self.driver.page_source
+            soup = BeautifulSoup(html,"html.parser")
+
+            #각 상품들은 div 하단의 ul들 안에 li 안에 들어있다.
+            goods_list = soup.select(tags['prod_list_wrap'])[0].find_all('li')
+
+            for g in goods_list:
+                data = {'tag' : tags['tag']}
+                try:
+                    text = str(g.find('p'))
+                    txt_e = text.find('<br/>')
+                    data['name'] = g.find('p').text[:txt_e-3]
+                    
+                except:
+                    data['name'] = None
+                    print(f'이름 찾기 에러 : {g}')
+
+                try:
+                    data['img'] = self.__check_img_link(g.find('img').get('src'),ConvName.MiniStop.value)
+                except:
+                    data['img'] = None
+                    print(f'그림찾기 에러 : {data["name"]} - {g}')
+
+                try:
+                    data['price'] = g.find('strong').text
+                except:
+                    data['price'] = None
+                    print(f'가격찾기 에러 : {data["name"]} - {g}')
+
+
+                sale_info.append(data)
+            time.sleep(3)
+
+            #self.driver.refresh()
+            time.sleep(3)
+        return sale_info
+
+
+
+    def crawl_mini_stop(self) -> dict:
+        """
+        mini_stop 편의점 할인 페이지에서 상품정보 가져옴
+
+        Return:
+            list 안에 dictionary로 상품정보들이 들어있음
+        """
+        #mini_stop 할인 페이지 로드
+        self.driver.get('https://www.ministop.co.kr/')
+    
+        time.sleep(5)
+
+
+        tag_datas = [
+            {
+                'btn_tab':'//*[@id="section"]/div[3]/ul/li[1]/a',
+                'btn_next_page':'//*[@id="section"]/div[3]/div[3]/div/a[1]',
+                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list > ul',
+                'tag' : '1+1'
+            },
+            {
+                'btn_tab':'//*[@id="section"]/div[3]/ul/li[2]/a',
+                'btn_next_page':'//*[@id="section"]/div[3]/div[3]/div/a[1]',
+                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list > ul',
+                'tag' : '2+1'
+            }
+        ]
+        sale_info = self.__crawl_mini_stop_items(tag_datas)
+
+        return sale_info
+
+
+
     def __get_next_page_btn_count_emart24(self,html):
         """
         상품 페이지 수에 따라 다음페이지 버튼 등의 위치가 변동이 있어 총 몇개의 버튼있는지 수량 반환
@@ -408,6 +552,7 @@ class SaleCrawler:
         num_bar = html.find_all('div',class_ = 'paging')
         return len(num_bar[0].find_all('a'))
         
+
 
     def __crawl_emart24_items(self,tag_datas):
         """
@@ -542,4 +687,3 @@ class SaleCrawler:
         sale_info = self.__crawl_emart24_items(tag_datas)
 
         return sale_info
-
