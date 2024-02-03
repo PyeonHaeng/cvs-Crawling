@@ -44,7 +44,41 @@ class FirebaseRealtime:
 
         
         self.db_ref.set(batch_data)
+        
+    def disable_data(self,select_keys,change_datas):
+        """
+        새로운 크롤링 데이터를 넣기 위해 기존의 데이터들의 값을 변경하기 위해 사용
+        
+        Args : 
+            select_keys(dict) : 바꾸고자 하는 데이터의 조건 ex) {'enable':True , 'store' : 'gs'}
+            change_datas(dict) : 바꿀 데이터 ex) {'enable' : False}
+        """
+        
+        query_ref = self.db.reference(u'sale')
+        for field, val in select_keys.items():
+            query_ref = query_ref.where(field,u'==',val)
+        
+        query_datas = query_ref.stream()
+
+        
+        collection_ref = self.db.collection(u'sale')
+
+        batch = self.db.batch()
+        for i,data in enumerate(query_datas):
+            update_ref = collection_ref.document(data.id)
+            
+            if i % 500 == 499:
+                batch.commit()
+                batch = self.db.batch()
+            batch.update(update_ref,change_datas)
+        batch.commit()
 
     def test(self):
-        
-        self.db_ref.child('sale').set([{'img': '1111','test':'1112222'},{'img':None,'test':'test123'}])
+        query = self.db_ref.child('sale').order_by_child('enable').equal_to(True)
+        for key in query:
+            print(key)
+        pass
+
+#test = FirebaseRealtime()
+
+#test.test()

@@ -9,7 +9,8 @@ import time
 from bs4 import BeautifulSoup
 import requests
 import enum
-import pickle
+#import pickle
+import re
 
 class ConvName(enum.Enum):
     GS25=0
@@ -50,14 +51,31 @@ class SaleCrawler:
             link = 'https://www.ministop.co.kr/MiniStopHomePage/page'+link[2:]
         
         elif conv_name == ConvName.EMart24.value:
-            link = 'https://emart24.co.kr' + link
+            # link = 'https://emart24.co.kr' + link
+            pass
 
         if requests.get(link,verify=False).status_code != 200:
             return None
         
         return link
 
+    def __covert_price_to_int(self,value):
+        """
+        가격을 인트형으로 변환하여 반환
 
+        Args:
+            value : 변환할 가격  ex) 3,500원
+        Return:
+            인트형으로 변환된 가격  ex) 3500
+            실패시 None 반환
+        """
+
+        sub_value = re.sub(r'[^0-9]','',value)
+
+        try:
+            return int(sub_value)
+        except ValueError:
+            return None
 
     def __close_popup_page(self):
         """
@@ -142,7 +160,7 @@ class SaleCrawler:
                         print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                     try:
-                        data['price'] = g.find('span', class_ = 'cost').text
+                        data['price'] = self.__covert_price_to_int(g.find('span', class_ = 'cost').text)
                     except:
                         data['price'] = None
                         print(f'가격찾기 에러 : {data["name"]} - {g}')
@@ -187,19 +205,19 @@ class SaleCrawler:
         tag_datas = [
             {
                 'btn_tab':'//*[@id="ONE_TO_ONE"]',
-                'btn_last_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/div/a[4]',
-                'btn_first_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/div/a[1]',
-                'prod_box':'#contents > div.cnt > div.cnt_section.mt50 > div > div > div:nth-child(3) > ul',
+                'btn_last_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[1]/div/a[4]',
+                'btn_first_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[1]/div/a[1]',
+                'prod_box':'#wrap > div.cntwrap > div.cnt > div.cnt_section.mt50 > div > div > div:nth-child(3) > ul',
                 'tag' : '1+1',
-                'btn_next_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/div/a[3]'
+                'btn_next_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[1]/div/a[3]'
             },
             {
                 'btn_tab':'//*[@id="TWO_TO_ONE"]',
-                'btn_last_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[2]/div/a[4]',
-                'btn_first_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[2]/div/a[1]',
-                'prod_box':'#contents > div.cnt > div.cnt_section.mt50 > div > div > div:nth-child(5) > ul',
+                'btn_last_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[2]/div/a[4]',
+                'btn_first_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[2]/div/a[1]',
+                'prod_box':'#wrap > div.cntwrap > div.cnt > div.cnt_section.mt50 > div > div > div:nth-child(5) > ul',
                 'tag' : '2+1',
-                'btn_next_page':'//*[@id="contents"]/div[2]/div[3]/div/div/div[2]/div/a[3]'
+                'btn_next_page':'//*[@id="wrap"]/div[4]/div[2]/div[3]/div/div/div[2]/div/a[3]'
             }
         ]
         sale_info = self.__crawl_gs_items(tag_datas)
@@ -258,7 +276,7 @@ class SaleCrawler:
                         print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                     try:
-                        data['price'] = g.find('div', class_ = 'price').find('strong').text
+                        data['price'] = self.__covert_price_to_int(g.find('div', class_ = 'price').find('strong').text)
                     except:
                         data['price'] = None
                         print(f'가격찾기 에러 : {data["name"]} - {g}')
@@ -329,6 +347,7 @@ class SaleCrawler:
             time.sleep(3)
 
             first_flag = True
+            
 
             #하단의 더보기를 한계까지 누르기
             while True:
@@ -364,7 +383,7 @@ class SaleCrawler:
                     print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                 try:
-                    data['price'] = g.find('div', class_ = 'price').text.strip()
+                    data['price'] = self.__covert_price_to_int(g.find('div', class_ = 'price').text.strip())
                 except:
                     data['price'] = None
                     print(f'가격찾기 에러 : {data["name"]} - {g}')
@@ -492,7 +511,7 @@ class SaleCrawler:
                     print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                 try:
-                    data['price'] = g.find('strong').text
+                    data['price'] = self.__covert_price_to_int(g.find('strong').text)
                 except:
                     data['price'] = None
                     print(f'가격찾기 에러 : {data["name"]} - {g}')
@@ -524,13 +543,13 @@ class SaleCrawler:
             {
                 'btn_tab':'//*[@id="section"]/div[3]/ul/li[1]/a',
                 'btn_next_page':'//*[@id="section"]/div[3]/div[3]/div/a[1]',
-                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list > ul',
+                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list',
                 'tag' : '1+1'
             },
             {
                 'btn_tab':'//*[@id="section"]/div[3]/ul/li[2]/a',
                 'btn_next_page':'//*[@id="section"]/div[3]/div[3]/div/a[1]',
-                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list > ul',
+                'prod_list_wrap':'#section > div.inner.wrap.service1 > div.event_plus_list',
                 'tag' : '2+1'
             }
         ]
@@ -539,18 +558,18 @@ class SaleCrawler:
         return sale_info
 
 
+    # - 사이트 변경으로 폐기 -
+    # def __get_next_page_btn_count_emart24(self,html):
+    #     """
+    #     상품 페이지 수에 따라 다음페이지 버튼 등의 위치가 변동이 있어 총 몇개의 버튼있는지 수량 반환
+    #     <<, <, >, >> 포함하여 기본 4개에 숫자 개수 추가
 
-    def __get_next_page_btn_count_emart24(self,html):
-        """
-        상품 페이지 수에 따라 다음페이지 버튼 등의 위치가 변동이 있어 총 몇개의 버튼있는지 수량 반환
-        <<, <, >, >> 포함하여 기본 4개에 숫자 개수 추가
-
-        Args:
-            html : BeautifulSoup(html,"html.parser")
-        """
+    #     Args:
+    #         html : BeautifulSoup(html,"html.parser")
+    #     """
         
-        num_bar = html.find_all('div',class_ = 'paging')
-        return len(num_bar[0].find_all('a'))
+    #     num_bar = html.find_all('div',class_ = 'paging')
+    #     return len(num_bar[0].find_all('a'))
         
 
 
@@ -569,34 +588,56 @@ class SaleCrawler:
 
 
         for tags in tag_datas:
+            time.sleep(3)
+            self.driver.get('https://emart24.co.kr/product/eventProduct.asp')
+            time.sleep(3)
 
             self.driver.find_element_by_xpath(tags['btn_tab']).click()
             time.sleep(3)
+            print('---------------------------------------')
+            html = self.driver.page_source
+            soup = BeautifulSoup(html,"html.parser")
+            # 마지막페이지 버튼을 한계까지 누르기
             
-            html = self.driver.page_source
-            soup = BeautifulSoup(html,"html.parser")
+            num_final = 0
 
-            #맨 마지막 페이지로 이동, 상품 페이지 수가 10페이지 미만일경우 처리를 위해 막대바의 페이지수 확인
-            self.driver.find_element_by_xpath(tags['btn_last_page']+f'[{self.__get_next_page_btn_count_emart24(soup)}]').click()
-            time.sleep(3)
+            while True:
+                try:
+                    
+                    num_bar = soup.select('body > div.viewContentsWrap > div > div > ul')[0].find_all('span')
+                    num_temp = num_bar[-1].text
+                    if num_final == num_temp: #마지막 페이지 속성갑에 opacity 가 있으면 마지막 페이지
+                        break
+                    else: 
+                        num_final = num_temp
+                        self.driver.find_element_by_xpath(tags['btn_last_page']).click()
+                        time.sleep(3)
+                                
+                        html = self.driver.page_source
+                        soup = BeautifulSoup(html,"html.parser")    
 
-            html = self.driver.page_source
-            soup = BeautifulSoup(html,"html.parser")
-                
-            #마지막 페이지에서 가장 마지막에 있는 숫자 페이지 확인 하여 총 페이지 수 가져옴
-            num_bar = soup.find_all('div',class_ = 'paging')
-            num_final = num_bar[0].find_all('a')[-3].find('em').text
+                        
+                except:
+                    print('막페이지 찾기 에러')
+
+            # - 사이트 변경으로 폐기 -
+            # #맨 마지막 페이지로 이동, 상품 페이지 수가 10페이지 미만일경우 처리를 위해 막대바의 페이지수 확인
+            # self.driver.find_element_by_xpath(tags['btn_last_page']+f'[{self.__get_next_page_btn_count_emart24(soup)}]').click()
+            # time.sleep(3)
+
             try:
                 num_final = int(num_final)
+                print(num_final)
             except:
                 print('페이지 마지막 번호 가져오기 에러?')
                 raise
             
-            print(num_final)
             #다시 1페이지로 복귀
-            self.driver.find_element_by_xpath(tags['btn_first_page']).click()
+            self.driver.get('https://emart24.co.kr/product/eventProduct.asp')
+            time.sleep(5)
+            self.driver.find_element_by_xpath(tags['btn_tab']).click()
             time.sleep(3)
-
+            
 
             #페이지 수만큼 반복 작업
             for _ in range(num_final):
@@ -606,26 +647,31 @@ class SaleCrawler:
                 #각 상품들은 prod_box 에 정보가 들어있다. 그러나 그냥 prod_box 를 가져오면 상당의 MD 추천도 가져옴, 1+1,2+1 위치가 다름
                 goods = soup.select(tags['prod_box'])
                 
-                goods = goods[0].find_all('div', class_ ='box')
+                goods = goods[0].find_all('div', class_ ='itemWrap')
 
 
                 for g in goods:
                     data = {'tag' : tags['tag']}
-                    
                     try:
-                        data['name'] = g.find('p',class_ = 'productDiv').text
+                        textwrap = g.find('div', class_ = 'itemTxtWrap').find_all('a')
+
+                    except:
+                        print(f'텍스트 묶음 찾기 에러 : {g}')
+
+                    try:
+                        data['name'] = textwrap[0].text
                     except:
                         data['name'] = None
                         print(f'이름 찾기 에러 : {g}')
 
                     try:
-                        data['img'] = self.__check_img_link(g.find('p', class_ ='productImg').find('img').get('src'),ConvName.EMart24.value)
+                        data['img'] = self.__check_img_link(g.find('div', class_ ='itemImg').find('img').get('src'),ConvName.EMart24.value)
                     except:
                         data['img'] = None
                         print(f'그림찾기 에러 : {data["name"]} - {g}')
 
                     try:
-                        data['price'] = g.find('p', class_ = 'price').text[:-2]
+                        data['price'] = self.__covert_price_to_int(textwrap[1].text[:-2])
                     except:
                         data['price'] = None
                         print(f'가격찾기 에러 : {data["name"]} - {g}')
@@ -634,19 +680,14 @@ class SaleCrawler:
                     sale_info.append(data)
 
                 try:
-                    self.driver.find_element_by_xpath(tags['btn_next_page']+f'[{self.__get_next_page_btn_count_emart24(soup) - 1}]').click()
+                    #self.driver.find_element_by_xpath(tags['btn_next_page']+f'[{self.__get_next_page_btn_count_emart24(soup) - 1}]').click()
+                    self.driver.find_element_by_xpath(tags['btn_next_page']).click()
 
 
-                    #implicitly_wait 는 기본 로딩이라 js 등에 의한 로딩은 무시?
-                    #다른 대기 방법 사용해보았지만 사이트에서 로딩창이 뜨면 에러 발생 -> 무식하게 time.sleep하면 괜찮은듯? 아닌듯 가아끔 못가져오는 경우가있넹....
-                    #self.driver.implicitly_wait(3)
-                    #WebDriverWait(self.driver,10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/ul/li[1]/div/p[1]')))
-                    #WebDriverWait(self.driver,10).until(EC.presence_of_all_elements_located((By.XPATH,'//*[@id="contents"]/div[2]/div[3]/div/div/div[1]/ul/li[1]/div/p[1]')))
+                   
                     time.sleep(5)
 
                 except:
-                    #다음버튼 눌러서 반응없이 에러나면 1+1 정보 끝난거
-                    # 에러 안나고 마지막 페이지 재로드. 다른 방법 필요
                     print('다음 페이지 버튼 에러?')
                     break
         return sale_info
@@ -668,20 +709,20 @@ class SaleCrawler:
 
         tag_datas = [
             {
-                'btn_tab':'//*[@id="tabNew"]/ul/li[2]/h4/a',
-                'btn_last_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a',
-                'btn_first_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a[1]',
-                'prod_box':'#regForm > div.section > div.eventProduct > div.tabContArea > ul',
+                'btn_tab':'/html/body/div[2]/div/section[3]/ul/li[2]/a',
+                'btn_last_page':'/html/body/div[2]/div/div/div[2]/div[2]',
+                'btn_first_page':'/html/body/div[2]/div/div/div[1]/div[1]/img',
+                'prod_box':'body > div.viewContentsWrap > div > section.itemList.active',
                 'tag' : '1+1',
-                'btn_next_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a'
+                'btn_next_page':'/html/body/div[2]/div/div/div[2]/div[1]/img'
             },
             {
-                'btn_tab':'//*[@id="tabNew"]/ul/li[3]/h4/a',
-                'btn_last_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a',
-                'btn_first_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a[1]',
-                'prod_box':'#regForm > div.section > div.eventProduct > div.tabContArea > ul',
+                'btn_tab':'/html/body/div[2]/div/section[3]/ul/li[3]/a',
+                'btn_last_page':'/html/body/div[2]/div/div/div[2]/div[2]',
+                'btn_first_page':'/html/body/div[2]/div/div/div[1]/div[1]/img',
+                'prod_box':'body > div.viewContentsWrap > div > section.itemList.active',
                 'tag' : '2+1',
-                'btn_next_page':'//*[@id="regForm"]/div[2]/div[3]/div[3]/a'
+                'btn_next_page':'/html/body/div[2]/div/div/div[2]/div[1]/img'
             }
         ]
         sale_info = self.__crawl_emart24_items(tag_datas)
