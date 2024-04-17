@@ -36,5 +36,6 @@ class PushNotificationModule:
 
 if __name__ == "__main__":
     PushNotificationModule().send_push(
-        title="3월 제품 업데이트 두 번째 :)!", body="3월 제품 업데이트가 완료되었습니다!"
+        title="3월 제품 업데이트 두 번째 :)!",
+        body="3월 제품 업데이트가 완료되었습니다!",
     )
