@@ -1,11 +1,9 @@
 import sale_crawling
 import time
-#import firebase_store
 from sql import SQL
-#import firebase_realtime
-#from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler
 from datetime import datetime
-#from push_notification import PushNotificationModule
+from push_notification import PushNotificationModule
 
 def main():
     crawer=sale_crawling.SaleCrawler()
