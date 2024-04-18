@@ -6,9 +6,16 @@ import os
 
 class Crawler(ABC):
     def __init__(self):
-        self._driver = self.initialize_driver()
+        self._driver = self.__initialize_driver()
 
-    def initialize_driver(self):
+    def __del__(self):
+        self._driver.quit()
+
+    @abstractmethod
+    def execute(self):
+        pass
+
+    def __initialize_driver(self):
         operating_system = platform.system()
         chromedriver_path = os.path.join(os.path.dirname(__file__), "chromedriver")
 
@@ -23,10 +30,3 @@ class Crawler(ABC):
             return webdriver.Chrome(executble_path=chromedriver_path)
         else:
             raise Exception(f"Unsupported operating system: {operating_system}")
-
-    def __del__(self):
-        self._driver.quit()
-
-    @abstractmethod
-    def execute(self):
-        pass
