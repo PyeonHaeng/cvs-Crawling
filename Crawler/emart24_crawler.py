@@ -13,9 +13,9 @@ else:
 
 
 class Emart24Crawler(Crawler):
-    def __init__(self):
-        self.__url = "https://emart24.co.kr/goods/event"
-        super().__init__()
+
+    def _url(self) -> str:
+        return "https://emart24.co.kr/goods/event"
 
     def __parse_data(self, html) -> list[EventItem]:
         soup = BeautifulSoup(html, "html.parser")
@@ -52,7 +52,7 @@ class Emart24Crawler(Crawler):
             "page": page,
             "category_seq": category_seq,
         }
-        async with session.get(self.__url, params=params) as response:
+        async with session.get(self._url(), params=params) as response:
             return await response.text()
 
     async def execute(self) -> list[EventItem]:

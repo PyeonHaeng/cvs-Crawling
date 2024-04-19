@@ -13,9 +13,9 @@ else:
 
 
 class GSCrawler(Crawler):
-    def __init__(self):
-        self.__url = "http://gs25.gsretail.com/gscvs/ko/products/event-goods-search"
-        super().__init__()
+
+    def _url(self) -> str:
+        return "http://gs25.gsretail.com/gscvs/ko/products/event-goods-search"
 
     def __parse_data(self, json_data) -> list[EventItem]:
         event_items = []
@@ -40,7 +40,7 @@ class GSCrawler(Crawler):
             "pageSize": page_size,
             "parameterList": parameter_list,
         }
-        async with session.get(self.__url, params=params) as response:
+        async with session.get(self._url(), params=params) as response:
             return await json.loads(response.json())
 
     async def execute(self):

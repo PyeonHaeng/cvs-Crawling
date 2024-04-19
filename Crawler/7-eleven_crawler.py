@@ -13,9 +13,9 @@ else:
 
 
 class SevenElevenCrawler(Crawler):
-    def __init__(self):
-        self.__url = "https://www.7-eleven.co.kr/product/listMoreAjax.asp"
-        super().__init__()
+
+    def _url(self) -> str:
+        return "https://www.7-eleven.co.kr/product/listMoreAjax.asp"
 
     def __parse_data(self, html) -> list[EventItem]:
         soup = BeautifulSoup(html, "html.parser")
@@ -61,7 +61,7 @@ class SevenElevenCrawler(Crawler):
             "intPageSize": 20,
             "pTab": promotion_condition,
         }
-        async with session.post(self.__url, data=data) as response:
+        async with session.post(self._url(), data=data) as response:
             return await response.text()
 
     async def execute(self) -> list[EventItem]:

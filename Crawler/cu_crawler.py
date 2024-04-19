@@ -13,9 +13,9 @@ else:
 
 
 class CUCrawler(Crawler):
-    def __init__(self):
-        self.__url = "https://cu.bgfretail.com/event/plusAjax.do"
-        super().__init__()
+
+    def _url(self) -> str:
+        return "https://cu.bgfretail.com/event/plusAjax.do"
 
     def __parse_data(self, html) -> list[EventItem]:
         soup = BeautifulSoup(html, "html.parser")
@@ -52,7 +52,7 @@ class CUCrawler(Crawler):
             "listType": 0,
             "searchCondition": search_condition,
         }
-        async with session.post(self.__url, data=data) as response:
+        async with session.post(self._url(), data=data) as response:
             return await response.text()
 
     async def execute(self) -> list[EventItem]:
