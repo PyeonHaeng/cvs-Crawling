@@ -95,6 +95,7 @@ class Crawler(ABC):
                         content_type = response.headers.get("Content-Type")
                         if content_type and content_type.startswith("image/"):
                             return True
+                    return False
             except (
                 aiohttp.ClientError,
                 asyncio.exceptions.TimeoutError,
