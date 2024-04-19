@@ -42,14 +42,32 @@ class GSCrawler(Crawler):
             event_items.append(event_item)
         return event_items
 
-    async def __fetch_data(self, session, parameter_list, page_num):
+    async def __fetch_data(self, session, parameter_list, page_num, max_retries=3):
         params = {
             "pageNum": page_num,
             "pageSize": 20,
             "parameterList": parameter_list,
         }
-        async with session.get(self._base_url, params=params) as response:
-            return json.loads(await response.json())
+        retry_count = 0
+        while retry_count < max_retries:
+            try:
+                async with session.get(self._base_url, params=params) as response:
+                    if response.status == 200:
+                        return json.loads(await response.json())
+                    self.__logger.error(
+                        f"Request failed with status code: {response.status}"
+                    )
+                    retry_count += 1
+                    await asyncio.sleep(1)  # 1초 대기 후 재시도
+            except aiohttp.ServerDisconnectedError as error:
+                self.__logger(f"Server Disconnected: {str(error)}")
+                retry_count += 1
+                await asyncio.sleep(1)  # 1초 대기 후 재시도
+            except aiohttp.ClientError as error:
+                self.__logger(f"Request failed: {str(error)}")
+                retry_count += 1
+                await asyncio.sleep(1)  # 1초 대기 후 재시도
+        raise Exception("Max retries exceed")
 
     async def execute(self):
         data_array = []
