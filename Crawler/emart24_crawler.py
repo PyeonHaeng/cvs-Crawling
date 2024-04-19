@@ -52,14 +52,6 @@ class Emart24Crawler(Crawler):
             event_items.append(event_item)
         return event_items
 
-    async def __fetch_data(self, session, page, category_seq) -> str:
-        params = {
-            "page": page,
-            "category_seq": category_seq,
-        }
-        async with session.get(self._base_url, params=params) as response:
-            return await response.text()
-
     async def execute(self) -> list[EventItem]:
         data_array = []
 
@@ -67,9 +59,18 @@ class Emart24Crawler(Crawler):
             for category_seq in self.__category_seqs:
                 page_num = 1
                 while True:
-                    html = await self.__fetch_data(session, page_num, category_seq)
+                    params = {
+                        "page": page_num,
+                        "category_seq": category_seq,
+                    }
+
+                    html = await self._fetch_data(
+                        session, self._base_url, params=params
+                    )
                     event_items = await self.__parse_data(session, html)
+
                     if not event_items:
+                        self.__logger.debug("Finished parsing the data to the end")
                         break
                     data_array.extend(event_items)
 

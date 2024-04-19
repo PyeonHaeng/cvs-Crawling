@@ -42,33 +42,6 @@ class GSCrawler(Crawler):
             event_items.append(event_item)
         return event_items
 
-    async def __fetch_data(self, session, parameter_list, page_num, max_retries=3):
-        params = {
-            "pageNum": page_num,
-            "pageSize": 20,
-            "parameterList": parameter_list,
-        }
-        retry_count = 0
-        while retry_count < max_retries:
-            try:
-                async with session.get(self._base_url, params=params) as response:
-                    if response.status == 200:
-                        return json.loads(await response.json())
-                    self.__logger.error(
-                        f"Request failed with status code: {response.status}"
-                    )
-                    retry_count += 1
-                    await asyncio.sleep(1)  # 1초 대기 후 재시도
-            except aiohttp.ServerDisconnectedError as error:
-                self.__logger(f"Server Disconnected: {str(error)}")
-                retry_count += 1
-                await asyncio.sleep(1)  # 1초 대기 후 재시도
-            except aiohttp.ClientError as error:
-                self.__logger(f"Request failed: {str(error)}")
-                retry_count += 1
-                await asyncio.sleep(1)  # 1초 대기 후 재시도
-        raise Exception("Max retries exceed")
-
     async def execute(self):
         data_array = []
 
@@ -76,14 +49,19 @@ class GSCrawler(Crawler):
             for parameter_list in self.__parameter_lists:
                 page_num = 1
                 while True:
-                    json_data = await self.__fetch_data(
-                        session, parameter_list, page_num
+                    params = {
+                        "pageNum": page_num,
+                        "pageSize": 20,
+                        "parameterList": parameter_list,
+                    }
+                    json_data = json.loads(
+                        await self._fetch_data(session, self._base_url, params=params)
                     )
-                    if "results" not in json_data:
+                    event_items = await self.__parse_data(session, json_data)
+
+                    if not event_items:
                         self.__logger.debug("Finished parsing the data to the end")
                         break
-
-                    event_items = await self.__parse_data(session, json_data)
                     data_array.extend(event_items)
 
                     total_pages = json_data["pagination"]["numberOfPages"]

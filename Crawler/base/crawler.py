@@ -1,9 +1,7 @@
 from abc import ABC, abstractmethod
 import aiohttp
+import asyncio
 import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 
 class Crawler(ABC):
@@ -20,6 +18,9 @@ class Crawler(ABC):
         execute(): 크롤링 작업을 수행하는 추상 메서드입니다.
         _is_valid_image(session, image_url): 주어진 이미지 URL이 유효한 이미지인지 확인하는 비동기 유틸리티 메서드입니다.
     """
+
+    logging.basicConfig(level=logging.INFO)
+    __logger = logging.getLogger(__name__)
 
     @property
     @abstractmethod
@@ -43,6 +44,32 @@ class Crawler(ABC):
         """
         pass
 
+    async def _fetch_data(
+        self, session: aiohttp.ClientSession, url: str, method: str = "GET", **kwargs
+    ):
+        max_retries = 3
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                async with getattr(session, method.lower())(url, **kwargs) as response:
+                    if response.status == 200:
+                        if "json" in response.headers.get("Content-Type", ""):
+                            return await response.json()
+                        else:
+                            return await response.text()
+                    self.__logger.error(
+                        f"Request failed with status code: {response.status}"
+                    )
+                    retry_count += 1
+                    await asyncio.sleep(1)  # 1초 대기 후 재시도
+            except Exception as error:
+                self.__logger.error(f"URL Response Failed: {str(error)}")
+                retry_count += 1
+                await asyncio.sleep(1)  # 1초 대기 후 재시도
+
+        raise Exception("Max retries exceed")
+
     async def _is_valid_image(
         self, session: aiohttp.ClientSession, image_url: str
     ) -> bool:
@@ -56,12 +83,19 @@ class Crawler(ABC):
         Returns:
             bool: 이미지 URL이 유효한 경우 True, 그렇지 않은 경우 False.
         """
-        try:
-            async with session.get(image_url) as response:
-                if response.status == 200:
-                    content_type = response.headers.get("Content-Type")
-                    if content_type and content_type.startswith("image/"):
-                        return True
-        except aiohttp.ClientError as e:
-            logger.error(f"Error checking image URL: {image_url}, {str(e)}")
+
+        max_retries = 3
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        content_type = response.headers.get("Content-Type")
+                        if content_type and content_type.startswith("image/"):
+                            return True
+            except Exception as e:
+                self.__logger.error(f"Error checking image URL: {image_url}, {str(e)}")
+                retry_count += 1
+                await asyncio.sleep(1)  # 1초 대기 후 재시도
         return False

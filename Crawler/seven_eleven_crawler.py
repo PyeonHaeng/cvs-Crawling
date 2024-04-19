@@ -65,17 +65,6 @@ class SevenElevenCrawler(Crawler):
 
         return event_items
 
-    async def __fetch_data(
-        self, session: aiohttp.ClientSession, page: int, promotion_condition: int
-    ) -> str:
-        data = {
-            "intCurrPage": page,
-            "intPageSize": 20,
-            "pTab": promotion_condition,
-        }
-        async with session.post(self._base_url, data=data) as response:
-            return await response.text()
-
     async def execute(self) -> list[EventItem]:
         data_array = []
 
@@ -83,12 +72,18 @@ class SevenElevenCrawler(Crawler):
             for promotion_condition in self.__promotion_conditions:
                 page_num = 1
                 while True:
-                    html = await self.__fetch_data(
-                        session, page_num, promotion_condition
+                    data = {
+                        "intCurrPage": page_num,
+                        "intPageSize": 20,
+                        "pTab": promotion_condition,
+                    }
+                    html = await self._fetch_data(
+                        session, self._base_url, "POST", data=data
                     )
                     event_items = await self.__parse_data(session, html)
 
                     if not event_items:
+                        self.__logger.debug("Finished parsing the data to the end")
                         break
                     data_array.extend(event_items)
 
