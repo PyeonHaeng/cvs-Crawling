@@ -76,7 +76,6 @@ class Emart24Crawler(Crawler):
 
                     page_num += 1
 
-        self.__logger.info(f"Total data count: {len(data_array)}")
         return data_array
 
 

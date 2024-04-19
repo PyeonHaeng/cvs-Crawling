@@ -63,7 +63,7 @@ class Crawler(ABC):
                     )
                     retry_count += 1
                     await asyncio.sleep(1)  # 1초 대기 후 재시도
-            except Exception as error:
+            except BaseException as error:
                 self.__logger.error(f"URL Response Failed: {str(error)}")
                 retry_count += 1
                 await asyncio.sleep(1)  # 1초 대기 후 재시도
@@ -94,7 +94,7 @@ class Crawler(ABC):
                         content_type = response.headers.get("Content-Type")
                         if content_type and content_type.startswith("image/"):
                             return True
-            except Exception as e:
+            except BaseException as e:
                 self.__logger.error(f"Error checking image URL: {image_url}, {str(e)}")
                 retry_count += 1
                 await asyncio.sleep(1)  # 1초 대기 후 재시도
