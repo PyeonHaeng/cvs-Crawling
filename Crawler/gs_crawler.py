@@ -14,7 +14,6 @@ else:
 
 
 class GSCrawler(Crawler):
-    logging.basicConfig(level=logging.INFO)
     __logger = logging.getLogger(__name__)
     _base_url = "http://gs25.gsretail.com/gscvs/ko/products/event-goods-search"
     __parameter_lists = ["ONE_TO_ONE", "TWO_TO_ONE"]
@@ -67,8 +66,9 @@ class GSCrawler(Crawler):
                     total_pages = json_data["pagination"]["numberOfPages"]
                     if page_num >= total_pages:
                         break
-
+                    self.__logger.debug(f"PageNumber Increasing... {page_num}")
                     page_num += 1
+                self.__logger.debug(f"GS: {parameter_list} Done.")
 
         return data_array
 
@@ -76,6 +76,7 @@ class GSCrawler(Crawler):
 async def main():
     crawler = GSCrawler()
     items = await crawler.execute()
+    print(len(items))
 
 
 if __name__ == "__main__":

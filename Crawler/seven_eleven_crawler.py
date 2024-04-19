@@ -14,7 +14,6 @@ else:
 
 
 class SevenElevenCrawler(Crawler):
-    logging.basicConfig(level=logging.INFO)
     __logger = logging.getLogger(__name__)
     _base_url = "https://www.7-eleven.co.kr/product/listMoreAjax.asp"
     __promotion_conditions = [1, 2]  # 1+1, 2+1
@@ -87,7 +86,9 @@ class SevenElevenCrawler(Crawler):
                         break
                     data_array.extend(event_items)
 
+                    self.__logger.debug(f"PageNumber Increasing... {page_num}")
                     page_num += 1
+                self.__logger.debug(f"7-Eleven: {promotion_condition} Done.")
 
         return data_array
 

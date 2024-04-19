@@ -19,7 +19,7 @@ class Crawler(ABC):
         _is_valid_image(session, image_url): 주어진 이미지 URL이 유효한 이미지인지 확인하는 비동기 유틸리티 메서드입니다.
     """
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
     __logger = logging.getLogger(__name__)
 
     @property

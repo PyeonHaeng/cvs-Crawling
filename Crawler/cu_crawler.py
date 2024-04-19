@@ -14,7 +14,6 @@ else:
 
 
 class CUCrawler(Crawler):
-    logging.basicConfig(level=logging.INFO)
     __logger = logging.getLogger(__name__)
     _base_url = "https://cu.bgfretail.com/event/plusAjax.do"
     __search_conditions = [23, 24]  # 1+1, 2+1
@@ -75,7 +74,9 @@ class CUCrawler(Crawler):
                         break
                     data_array.extend(event_items)
 
+                    self.__logger.debug(f"PageNumber Increasing... {page_num}")
                     page_num += 1
+                self.__logger.debug(f"CU: {search_condition} Done.")
 
         return data_array
 
