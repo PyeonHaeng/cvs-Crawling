@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 import json
+import logging
 
 if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
@@ -13,11 +14,14 @@ else:
 
 
 class GSCrawler(Crawler):
+    logging.basicConfig(level=logging.INFO)
+    __logger = logging.getLogger(__name__)
+    _base_url = "http://gs25.gsretail.com/gscvs/ko/products/event-goods-search"
+    __parameter_lists = ["ONE_TO_ONE", "TWO_TO_ONE"]
 
-    def _url(self) -> str:
-        return "http://gs25.gsretail.com/gscvs/ko/products/event-goods-search"
-
-    def __parse_data(self, json_data) -> list[EventItem]:
+    async def __parse_data(
+        self, session: aiohttp.ClientSession, json_data
+    ) -> list[EventItem]:
         event_items = []
         for item in json_data["results"]:
             event_item = EventItem(
@@ -29,37 +33,39 @@ class GSCrawler(Crawler):
                 event_name=item["goodsNm"],
                 price=item["price"],
                 name=item["abrGoodsNm"],
-                image_url=item["attFileNm"],
+                image_url=(
+                    item["attFileNm"]
+                    if await self._is_valid_image(session, item["attFileNm"])
+                    else None
+                ),
             )
             event_items.append(event_item)
         return event_items
 
-    async def __fetch_data(self, session, parameter_list, page_num, page_size):
+    async def __fetch_data(self, session, parameter_list, page_num):
         params = {
             "pageNum": page_num,
-            "pageSize": page_size,
+            "pageSize": 20,
             "parameterList": parameter_list,
         }
-        async with session.get(self._url(), params=params) as response:
-            return await json.loads(response.json())
+        async with session.get(self._base_url, params=params) as response:
+            return json.loads(await response.json())
 
     async def execute(self):
-        parameter_lists = ["ONE_TO_ONE", "TWO_TO_ONE"]
-        page_size = 20
         data_array = []
 
         async with aiohttp.ClientSession() as session:
-            for parameter_list in parameter_lists:
+            for parameter_list in self.__parameter_lists:
                 page_num = 1
                 while True:
                     json_data = await self.__fetch_data(
-                        session, parameter_list, page_num, page_size
+                        session, parameter_list, page_num
                     )
                     if "results" not in json_data:
-                        print("Error: Invalid response")
+                        self.__logger.debug("Finished parsing the data to the end")
                         break
 
-                    event_items = self.__parse_data(json_data)
+                    event_items = await self.__parse_data(session, json_data)
                     data_array.extend(event_items)
 
                     total_pages = json_data["pagination"]["numberOfPages"]
@@ -68,8 +74,7 @@ class GSCrawler(Crawler):
 
                     page_num += 1
 
-        # 결과 출력
-        print(f"Total data count: {len(data_array)}")
+        self.__logger.info(f"Total data count: {len(data_array)}")
         return data_array
 
 

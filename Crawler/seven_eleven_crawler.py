@@ -13,51 +13,65 @@ else:
     from .event_items import PromotionType
 
 
-class CUCrawler(Crawler):
+class SevenElevenCrawler(Crawler):
     logging.basicConfig(level=logging.INFO)
     __logger = logging.getLogger(__name__)
-    _base_url = "https://cu.bgfretail.com/event/plusAjax.do"
-    __search_conditions = [23, 24]  # 1+1, 2+1
+    _base_url = "https://www.7-eleven.co.kr/product/listMoreAjax.asp"
+    __promotion_conditions = [1, 2]  # 1+1, 2+1
 
     async def __parse_data(
         self, session: aiohttp.ClientSession, html: str
     ) -> list[EventItem]:
         soup = BeautifulSoup(html, "html.parser")
         event_items = []
-        for li in soup.select("li.prod_list"):
-            image_url = li.select_one(".prod_img img")["src"]
-            if image_url.startswith("//"):
-                image_url = "https:" + image_url
+        for li in soup.select("li"):
+            promotion_type = None
+            badge = li.select_one(".tag_list_01 li")
+            if badge is None:
+                continue
+
+            badge_text = badge.get_text(strip=True)
+            if badge_text == "1+1":
+                promotion_type = PromotionType.buy_one_get_one_free
+            elif badge_text == "2+1":
+                promotion_type = PromotionType.buy_two_get_one_free
+
+            if promotion_type is None:
+                continue
+
+            image_url = (
+                "https://www.7-eleven.co.kr" + li.select_one(".pic_product img")["src"]
+            )
             if not await self._is_valid_image(session, image_url):
                 image_url = None
-            name = li.select_one(".prod_text .name p").get_text(strip=True)
-            price = int(
-                li.select_one(".prod_text .price strong")
-                .get_text(strip=True)
-                .replace(",", "")
-            )
-            badge = li.select_one(".badge span")
-            badge_text = badge.get_text(strip=True) if badge else ""
+
+            name = li.select_one(".tit_product").get_text(strip=True)
+            price_element = li.select(".price_list span:not(.hide)")
+            if len(price_element) > 1:
+                price = int(price_element[1].get_text(strip=True).replace(",", ""))
+            elif len(price_element) == 1:
+                price = int(price_element[0].get_text(strip=True).replace(",", ""))
+            else:
+                raise ValueError
 
             event_item = EventItem(
-                promotion_type=(
-                    PromotionType.buy_one_get_one_free
-                    if badge_text == "1+1"
-                    else PromotionType.buy_two_get_one_free
-                ),
+                promotion_type=promotion_type,
                 event_name=name,
                 price=price,
                 name=name,
                 image_url=image_url,
             )
             event_items.append(event_item)
+
         return event_items
 
-    async def __fetch_data(self, session, page_index, search_condition) -> str:
+    async def __fetch_data(
+        self, session: aiohttp.ClientSession, page: int, promotion_condition: int
+    ) -> str:
         data = {
-            "pageIndex": page_index,
-            "listType": 0,
-            "searchCondition": search_condition,
+            "intCurrPage": page,
+            "intPageSize": 20,
+            "pTab": promotion_condition,
         }
         async with session.post(self._base_url, data=data) as response:
             return await response.text()
@@ -66,11 +80,14 @@ class CUCrawler(Crawler):
         data_array = []
 
         async with aiohttp.ClientSession() as session:
-            for search_condition in self.__search_conditions:
+            for promotion_condition in self.__promotion_conditions:
                 page_num = 1
                 while True:
-                    html = await self.__fetch_data(session, page_num, search_condition)
+                    html = await self.__fetch_data(
+                        session, page_num, promotion_condition
+                    )
                     event_items = await self.__parse_data(session, html)
+
                     if not event_items:
                         break
                     data_array.extend(event_items)
@@ -82,7 +99,7 @@ class CUCrawler(Crawler):
 
 
 async def main():
-    crawler = CUCrawler()
+    crawler = SevenElevenCrawler()
     items = await crawler.execute()
 
 

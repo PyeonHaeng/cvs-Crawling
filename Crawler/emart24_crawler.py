@@ -1,6 +1,7 @@
 import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
+import logging
 
 if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
@@ -13,15 +14,20 @@ else:
 
 
 class Emart24Crawler(Crawler):
+    logging.basicConfig(level=logging.INFO)
+    __logger = logging.getLogger(__name__)
+    _base_url = "https://emart24.co.kr/goods/event"
+    __category_seqs = [1, 2]  # 1+1, 2+1 각각 가져오기
 
-    def _url(self) -> str:
-        return "https://emart24.co.kr/goods/event"
-
-    def __parse_data(self, html) -> list[EventItem]:
+    async def __parse_data(
+        self, session: aiohttp.ClientSession, html
+    ) -> list[EventItem]:
         soup = BeautifulSoup(html, "html.parser")
         event_items = []
         for div in soup.select("div.itemWrap"):
             image_url = div.select_one(".itemImg img")["src"]
+            if not await self._is_valid_image(session, image_url):
+                image_url = None
             name = div.select_one(".itemtitle p a").get_text(strip=True)
             price = int(
                 div.select_one(".price")
@@ -43,7 +49,6 @@ class Emart24Crawler(Crawler):
                 name=name,
                 image_url=image_url,
             )
-            print(event_item)
             event_items.append(event_item)
         return event_items
 
@@ -52,27 +57,25 @@ class Emart24Crawler(Crawler):
             "page": page,
             "category_seq": category_seq,
         }
-        async with session.get(self._url(), params=params) as response:
+        async with session.get(self._base_url, params=params) as response:
             return await response.text()
 
     async def execute(self) -> list[EventItem]:
-        category_seqs = [1, 2]  # 1+1, 2+1 각각 가져오기
         data_array = []
 
         async with aiohttp.ClientSession() as session:
-            for category_seq in category_seqs:
+            for category_seq in self.__category_seqs:
                 page_num = 1
                 while True:
                     html = await self.__fetch_data(session, page_num, category_seq)
-                    event_items = self.__parse_data(html)
+                    event_items = await self.__parse_data(session, html)
                     if not event_items:
                         break
                     data_array.extend(event_items)
 
                     page_num += 1
 
-        # 결과 출력
-        print(f"Total data count: {len(data_array)}")
+        self.__logger.info(f"Total data count: {len(data_array)}")
         return data_array
 
 

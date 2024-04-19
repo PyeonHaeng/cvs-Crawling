@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
 import aiohttp
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class Crawler(ABC):
@@ -19,7 +23,7 @@ class Crawler(ABC):
 
     @property
     @abstractmethod
-    def _url(self) -> str:
+    def _base_url(self) -> str:
         """
         크롤링할 대상 URL을 나타내는 추상 속성입니다.
 
@@ -58,6 +62,6 @@ class Crawler(ABC):
                     content_type = response.headers.get("Content-Type")
                     if content_type and content_type.startswith("image/"):
                         return True
-        except aiohttp.ClientError:
-            pass
+        except aiohttp.ClientError as e:
+            logger.error(f"Error checking image URL: {image_url}, {str(e)}")
         return False
