@@ -1,6 +1,5 @@
 import aiohttp
 import asyncio
-import json
 from bs4 import BeautifulSoup
 
 if __name__ == "__main__" or __name__ == "Crawler":
