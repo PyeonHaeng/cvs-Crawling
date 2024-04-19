@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 import aiohttp
-import asyncio
 
 
 class Crawler(ABC):
