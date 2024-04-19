@@ -86,15 +86,20 @@ class Crawler(ABC):
 
         max_retries = 3
         retry_count = 0
+        timeout = aiohttp.ClientTimeout(total=10)  # 10초 시간 초과 설정
 
         while retry_count < max_retries:
             try:
-                async with session.get(image_url) as response:
+                async with session.get(image_url, timeout=timeout) as response:
                     if response.status == 200:
                         content_type = response.headers.get("Content-Type")
                         if content_type and content_type.startswith("image/"):
                             return True
-            except BaseException as e:
+            except (
+                aiohttp.ClientError,
+                asyncio.exceptions.TimeoutError,
+                asyncio.exceptions.CancelledError,
+            ) as e:
                 self.__logger.error(f"Error checking image URL: {image_url}, {str(e)}")
                 retry_count += 1
                 await asyncio.sleep(1)  # 1초 대기 후 재시도
