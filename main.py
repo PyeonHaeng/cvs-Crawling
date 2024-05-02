@@ -45,11 +45,7 @@ async def get_or_create_main_product(async_sql, name, image_url):
 async def product_exists(
     async_sql, main_product_id, name, price, promotion, store, event_month
 ) -> bool:
-    select_query = """
-        SELECT COUNT(*) as count
-        FROM products
-        WHERE main_product_id = %s AND name = %s AND price = %s AND promotion = %s AND store = %s AND event_month = %s
-    """
+    select_query = "SELECT COUNT(*) as count FROM products WHERE main_product_id = %s AND name = %s AND price = %s AND promotion = %s AND store = %s AND event_month = %s"
     result = await async_sql.execute(
         select_query, main_product_id, name, price, promotion, store, event_month
     )
@@ -106,6 +102,7 @@ async def save_to_db(event_items):
             logging.info(f"Skipped {skipped_count} duplicate items")
     except Exception as e:
         logging.error(f"Error occurred while saving to the database: {str(e)}")
+        raise e
 
 
 async def main():
