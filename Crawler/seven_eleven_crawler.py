@@ -7,10 +7,12 @@ if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
     from event_items import EventItem
     from event_items import PromotionType
+    from event_items import ConvenienceStoreType
 else:
     from .base.crawler import Crawler
     from .event_items import EventItem
     from .event_items import PromotionType
+    from .event_items import ConvenienceStoreType
 
 
 class SevenElevenCrawler(Crawler):
@@ -55,6 +57,7 @@ class SevenElevenCrawler(Crawler):
 
             event_item = EventItem(
                 promotion_type=promotion_type,
+                store=ConvenienceStoreType.seven_eleven,
                 event_name=name,
                 price=price,
                 name=name,

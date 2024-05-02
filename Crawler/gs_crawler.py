@@ -7,10 +7,12 @@ if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
     from event_items import EventItem
     from event_items import PromotionType
+    from event_items import ConvenienceStoreType
 else:
     from .base.crawler import Crawler
     from .event_items import EventItem
     from .event_items import PromotionType
+    from .event_items import ConvenienceStoreType
 
 
 class GSCrawler(Crawler):
@@ -29,6 +31,7 @@ class GSCrawler(Crawler):
                     if item["eventTypeNm"] == "1+1"
                     else PromotionType.buy_two_get_one_free
                 ),
+                store=ConvenienceStoreType.gs25,
                 event_name=item["goodsNm"],
                 price=item["price"],
                 name=item["abrGoodsNm"],

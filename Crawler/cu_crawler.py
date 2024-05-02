@@ -7,10 +7,12 @@ if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
     from event_items import EventItem
     from event_items import PromotionType
+    from event_items import ConvenienceStoreType
 else:
     from .base.crawler import Crawler
     from .event_items import EventItem
     from .event_items import PromotionType
+    from .event_items import ConvenienceStoreType
 
 
 class CUCrawler(Crawler):
@@ -44,6 +46,7 @@ class CUCrawler(Crawler):
                     if badge_text == "1+1"
                     else PromotionType.buy_two_get_one_free
                 ),
+                store=ConvenienceStoreType.cu,
                 event_name=name,
                 price=price,
                 name=name,
@@ -84,6 +87,7 @@ class CUCrawler(Crawler):
 async def main():
     crawler = CUCrawler()
     items = await crawler.execute()
+    print(items)
 
 
 if __name__ == "__main__":

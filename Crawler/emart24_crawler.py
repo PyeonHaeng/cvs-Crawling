@@ -7,10 +7,12 @@ if __name__ == "__main__" or __name__ == "Crawler":
     from base.crawler import Crawler
     from event_items import EventItem
     from event_items import PromotionType
+    from event_items import ConvenienceStoreType
 else:
     from .base.crawler import Crawler
     from .event_items import EventItem
     from .event_items import PromotionType
+    from .event_items import ConvenienceStoreType
 
 
 class Emart24Crawler(Crawler):
@@ -25,7 +27,7 @@ class Emart24Crawler(Crawler):
         event_items = []
         for div in soup.select("div.itemWrap"):
             image_url = div.select_one(".itemImg img")["src"]
-            if not await self._is_valid_image(session, image_url):
+            if not image_url or not await self._is_valid_image(session, image_url):
                 image_url = None
             name = div.select_one(".itemtitle p a").get_text(strip=True)
             price = int(
@@ -43,6 +45,7 @@ class Emart24Crawler(Crawler):
                     if badge_text == "1+1"
                     else PromotionType.buy_two_get_one_free
                 ),
+                store=ConvenienceStoreType.emart24,
                 event_name=name,
                 price=price,
                 name=name,
