@@ -38,37 +38,74 @@ async def get_or_create_main_product(async_sql, name, image_url):
     else:
         insert_query = "INSERT INTO main_products (name, image_url) VALUES (%s, %s)"
         await async_sql.execute(insert_query, name, image_url)
-        return await async_sql.execute("SELECT LAST_INSERT_ID()")[0]["LAST_INSERT_ID()"]
+        last_id_result = await async_sql.execute("SELECT LAST_INSERT_ID()")
+        return last_id_result[0]["LAST_INSERT_ID()"]
+
+
+async def product_exists(
+    async_sql, main_product_id, name, price, promotion, store, event_month
+) -> bool:
+    select_query = """
+        SELECT COUNT(*) as count
+        FROM products
+        WHERE main_product_id = %s AND name = %s AND price = %s AND promotion = %s AND store = %s AND event_month = %s
+    """
+    result = await async_sql.execute(
+        select_query, main_product_id, name, price, promotion, store, event_month
+    )
+    return result[0]["count"] > 0
 
 
 async def save_to_db(event_items):
-    async with AsyncSQL() as async_sql:
-        for item in event_items:
-            main_product_id = await get_or_create_main_product(
-                async_sql, item.name, item.image_url
-            )
-            insert_query = """
-                INSERT INTO products (main_product_id, name, price, promotion, store, event_month)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
+    # 로깅용 변수
+    inserted_count = 0
+    skipped_count = 0
+    try:
+        async with AsyncSQL() as async_sql:
+            for item in event_items:
+                main_product_id = await get_or_create_main_product(
+                    async_sql, item.name, item.image_url
+                )
 
-            name = item.name
-            price = item.price
-            promotion = item.promotion_type.value
-            store = item.store.value
-            event_month = datetime.now().strftime("%Y-%m-01")
+                name = item.name
+                price = item.price
+                promotion = item.promotion_type.value
+                store = item.store.value
+                event_month = datetime.now().strftime("%Y-%m-01")
 
-            await async_sql.execute(
-                insert_query,
-                main_product_id,
-                name,
-                price,
-                promotion,
-                store,
-                event_month,
-            )
+                if await product_exists(
+                    async_sql,
+                    main_product_id,
+                    name,
+                    price,
+                    promotion,
+                    store,
+                    event_month,
+                ):
+                    logging.info(f"Skipping duplicate item: {name} ({store})")
+                    skipped_count += 1
+                    continue
 
-        logging.info(f"Inserted {len(event_items)} items into the database")
+                insert_query = """
+                    INSERT INTO products (main_product_id, name, price, promotion, store, event_month)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+
+                await async_sql.execute(
+                    insert_query,
+                    main_product_id,
+                    name,
+                    price,
+                    promotion,
+                    store,
+                    event_month,
+                )
+                inserted_count += 1
+
+            logging.info(f"Inserted {inserted_count} items into the database")
+            logging.info(f"Skipped {skipped_count} duplicate items")
+    except Exception as e:
+        logging.error(f"Error occurred while saving to the database: {str(e)}")
 
 
 async def main():
