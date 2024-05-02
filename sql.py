@@ -1,5 +1,6 @@
 import aiomysql
 import os
+import asyncio
 
 
 class AsyncSQL:
@@ -30,4 +31,21 @@ class AsyncSQL:
         async with self.__pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cur:
                 await cur.execute(query, args)
-                return await cur.fetchall()
+                if query.lower().startswith(("select", "show")):
+                    return await cur.fetchall()
+                else:
+                    await conn.commit()
+                    return None
+
+
+async def main():
+    async with AsyncSQL() as async_sql:
+        result = await async_sql.execute(
+            "SELECT id FROM main_products WHERE name = %s", "반찬단지)연근조림120g"
+        )
+        print(result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+    pass
