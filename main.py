@@ -98,6 +98,21 @@ async def save_to_db(event_items):
                 )
                 inserted_count += 1
 
+                insert_back_up_query = """
+                    INSERT INTO back_up (name, image_url, price, store, promotion, event_date)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+
+                await async_sql.execute(
+                    insert_back_up_query,
+                    name,
+                    item.image_url,
+                    price,
+                    store,
+                    promotion,
+                    event_date,
+                )
+
             logging.info(f"Inserted {inserted_count} items into the database")
             logging.info(f"Skipped {skipped_count} duplicate items")
     except Exception as e:
