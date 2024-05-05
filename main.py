@@ -7,7 +7,6 @@ if __name__ == "__main__" or __name__ == "main":
     from crawler.emart24_crawler import Emart24Crawler
     from crawler.gs_crawler import GSCrawler
     from crawler.seven_eleven_crawler import SevenElevenCrawler
-    from crawler.event_items import PromotionType
     from sql import AsyncSQL
 else:
     from .crawler.cu_crawler import CUCrawler
