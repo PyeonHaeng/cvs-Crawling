@@ -43,11 +43,11 @@ async def get_or_create_main_product(async_sql, name, image_url):
 
 
 async def product_exists(
-    async_sql, main_product_id, name, price, promotion, store, event_month
+    async_sql, main_product_id, name, price, promotion, store, event_date
 ) -> bool:
-    select_query = "SELECT COUNT(*) as count FROM products WHERE main_product_id = %s AND name = %s AND price = %s AND promotion = %s AND store = %s AND event_month = %s"
+    select_query = "SELECT COUNT(*) as count FROM products WHERE main_product_id = %s AND name = %s AND price = %s AND promotion = %s AND store = %s AND event_date = %s"
     result = await async_sql.execute(
-        select_query, main_product_id, name, price, promotion, store, event_month
+        select_query, main_product_id, name, price, promotion, store, event_date
     )
     return result[0]["count"] > 0
 
@@ -67,7 +67,7 @@ async def save_to_db(event_items):
                 price = item.price
                 promotion = item.promotion_type.value
                 store = item.store.value
-                event_month = datetime.now().strftime("%Y-%m-01")
+                event_date = datetime.now().strftime("%Y-%m-01")
 
                 if await product_exists(
                     async_sql,
@@ -76,14 +76,14 @@ async def save_to_db(event_items):
                     price,
                     promotion,
                     store,
-                    event_month,
+                    event_date,
                 ):
                     logging.info(f"Skipping duplicate item: {name} ({store})")
                     skipped_count += 1
                     continue
 
                 insert_query = """
-                    INSERT INTO products (main_product_id, name, price, promotion, store, event_month)
+                    INSERT INTO products (main_product_id, name, price, promotion, store, event_date)
                     VALUES (%s, %s, %s, %s, %s, %s)
                 """
 
@@ -94,7 +94,7 @@ async def save_to_db(event_items):
                     price,
                     promotion,
                     store,
-                    event_month,
+                    event_date,
                 )
                 inserted_count += 1
 
