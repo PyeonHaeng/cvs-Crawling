@@ -1,10 +1,12 @@
 import aiomysql
 import os
 import asyncio
+from dotenv import load_dotenv
 
 
 class AsyncSQL:
     def __init__(self, charset: str = "utf8") -> None:
+        load_dotenv()
         self.__config = {
             "user": os.getenv("DB_USER"),
             "password": os.getenv("DB_PASSWORD"),
