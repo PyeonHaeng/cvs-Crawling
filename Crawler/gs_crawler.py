@@ -34,7 +34,7 @@ class GSCrawler(Crawler):
                 store=ConvenienceStoreType.gs25,
                 event_name=item["goodsNm"],
                 price=item["price"],
-                name=item["abrGoodsNm"],
+                name=item["goodsNm"],
                 image_url=(
                     item["attFileNm"]
                     if await self._is_valid_image(session, item["attFileNm"])
