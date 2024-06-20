@@ -1,8 +1,5 @@
-test.ipynb
-data.pickle
-key/serviceAccountKey.json
-firestore test.py
-끄적끄적.md
+openai/*
+embedding_cache.json
 
 ## Virtual Environment ##
 virtual_environment/
