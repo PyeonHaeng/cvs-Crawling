@@ -26,7 +26,7 @@ class Emart24Crawler(Crawler):
         soup = BeautifulSoup(html, "html.parser")
         event_items = []
         for div in soup.select("div.itemWrap"):
-            image_url = div.select_one(".itemImg img")["src"]
+            image_url = div.select_one(".itemSpImg img")["src"]
             if not image_url or not await self._is_valid_image(session, image_url):
                 image_url = None
             name = div.select_one(".itemtitle p a").get_text(strip=True)
@@ -51,6 +51,7 @@ class Emart24Crawler(Crawler):
                 name=name,
                 image_url=image_url,
             )
+            self.__logger.debug(f"{event_item}")
             event_items.append(event_item)
         return event_items
 
@@ -89,4 +90,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     asyncio.run(main())
